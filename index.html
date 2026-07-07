@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台灣電費計算機 ⚡️ 住宅與營業用電即時試算</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind Config for Theme Customization -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e', // Emerald Green
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            secondary: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9', // Sky Blue
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: radial-gradient(circle at 50% 0%, #f0fdf4 0%, #f0f9ff 100%);
+    }
+    .custom-shadow {
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.02);
+    }
+  </style>
+</head>
+<body class="min-h-screen py-6 px-4 md:py-12 md:px-8 text-slate-800">
+
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <header class="text-center mb-8 md:mb-12">
+      <div class="inline-flex items-center justify-center p-3 bg-gradient-to-br from-brand-500 to-secondary-500 rounded-2xl text-white shadow-lg mb-4">
+        <i data-lucide="zap" class="w-8 h-8 animate-pulse"></i>
+      </div>
+      <h1 class="text-3xl md:text-4xl font-black bg-gradient-to-r from-brand-700 to-secondary-700 bg-clip-text text-transparent">
+        台灣電費計算機
+      </h1>
+      <p class="text-slate-500 mt-2 text-sm md:text-base">
+        依據台灣電力公司最新累進電價規則，精準試算住宅及營業用電明細
+      </p>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+      
+      <!-- Left: Settings Card -->
+      <section class="lg:col-span-5 space-y-6">
+        <div class="bg-white rounded-3xl p-6 md:p-8 custom-shadow border border-slate-100/80">
+          <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <i data-lucide="sliders" class="text-brand-500 w-5 h-5"></i>
+            計算條件設定
+          </h2>
+
+          <div class="space-y-6">
+            <!-- Billing Cycle Selection -->
+            <div>
+              <label class="block text-sm font-semibold text-slate-600 mb-2">計費週期</label>
+              <div class="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100">
+                <button type="button" onclick="setCycle('bimonthly')" id="btn-cycle-bimonthly" class="py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm bg-white text-slate-800 border border-slate-200/50">
+                  雙月 (每期) 帳單
+                </button>
+                <button type="button" onclick="setCycle('monthly')" id="btn-cycle-monthly" class="py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 text-slate-500 hover:text-slate-800">
+                  單月計費
+                </button>
+              </div>
+              <p class="text-xs text-slate-400 mt-1.5 px-1">註：台電一般住宅與小商店多採「雙月」抄表收費一次。</p>
+            </div>
+
+            <!-- Electricity Type Selection -->
+            <div>
+              <label class="block text-sm font-semibold text-slate-600 mb-2">用電種類</label>
+              <div class="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100">
+                <button type="button" onclick="setType('residential')" id="btn-type-residential" class="py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm bg-white text-slate-800 border border-slate-200/50">
+                  非營業用電 (住宅)
+                </button>
+                <button type="button" onclick="setType('commercial')" id="btn-type-commercial" class="py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 text-slate-500 hover:text-slate-800">
+                  營業用電 (小商店)
+                </button>
+              </div>
+            </div>
+
+            <!-- Season Selection -->
+            <div>
+              <label class="block text-sm font-semibold text-slate-600 mb-2">用電季節</label>
+              <div class="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100">
+                <button type="button" onclick="setSeason('summer')" id="btn-season-summer" class="py-3 px-4 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 text-amber-700 bg-amber-50 border border-amber-200/50 shadow-sm">
+                  <i data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
+                  夏月 (6/1-9/30)
+                </button>
+                <button type="button" onclick="setSeason('nonSummer')" id="btn-season-nonSummer" class="py-3 px-4 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800">
+                  <i data-lucide="snowflake" class="w-4 h-4 text-sky-400"></i>
+                  非夏月
+                </button>
+              </div>
+            </div>
+
+            <!-- kWh Input -->
+            <div>
+              <label for="kwh-input" class="block text-sm font-semibold text-slate-600 mb-2">總用電度數 (度)</label>
+              <div class="relative">
+                <input type="number" id="kwh-input" min="0" value="500" oninput="calculateBill()" class="w-full pl-5 pr-16 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-2xl font-bold text-slate-800 focus:outline-none focus:border-brand-500 focus:bg-white transition-all duration-200" placeholder="0">
+                <span class="absolute right-5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-lg">度</span>
+              </div>
+              
+              <!-- Quick Add Buttons -->
+              <div class="grid grid-cols-4 gap-2 mt-3">
+                <button type="button" onclick="adjustKwh(100)" class="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-600 text-xs font-semibold rounded-lg border border-slate-200 transition-all">+100度</button>
+                <button type="button" onclick="adjustKwh(500)" class="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-600 text-xs font-semibold rounded-lg border border-slate-200 transition-all">+500度</button>
+                <button type="button" onclick="adjustKwh(1000)" class="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-600 text-xs font-semibold rounded-lg border border-slate-200 transition-all">+1000度</button>
+                <button type="button" onclick="clearKwh()" class="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg border border-red-200 transition-all">歸零</button>
+              </div>
+            </div>
+
+            <!-- Action Button -->
+            <button type="button" onclick="calculateBill()" class="w-full py-4 bg-gradient-to-r from-brand-600 to-secondary-600 hover:from-brand-700 hover:to-secondary-700 active:scale-[0.98] text-white font-bold rounded-2xl shadow-lg shadow-brand-500/20 transition-all duration-200 flex items-center justify-center gap-2 text-lg">
+              <i data-lucide="calculator" class="w-5 h-5"></i>
+              立即計算電費
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Results Card -->
+      <section class="lg:col-span-7 space-y-6">
+        <div class="bg-white rounded-3xl p-6 md:p-8 custom-shadow border border-slate-100/80">
+          <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <i data-lucide="receipt" class="text-secondary-500 w-5 h-5"></i>
+            試算結果明細
+          </h2>
+
+          <!-- Main Stats -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            <!-- Price Card -->
+            <div class="bg-gradient-to-br from-brand-50 to-brand-100/40 p-6 rounded-2xl border border-brand-100/50">
+              <span class="text-xs font-semibold text-brand-700 uppercase tracking-wider block mb-1">估計總電費</span>
+              <div class="flex items-baseline gap-1 text-brand-600">
+                <span class="text-sm font-bold">NT$</span>
+                <span id="result-total-bill" class="text-4xl font-extrabold tracking-tight">0</span>
+                <span class="text-sm font-semibold ml-1 text-slate-500">元</span>
+              </div>
+              <span class="text-xs text-slate-400 mt-2 block" id="result-cycle-desc">雙月合併帳單金額</span>
+            </div>
+
+            <!-- Average Rate Card -->
+            <div class="bg-gradient-to-br from-secondary-50 to-secondary-100/40 p-6 rounded-2xl border border-secondary-100/50">
+              <span class="text-xs font-semibold text-secondary-700 uppercase tracking-wider block mb-1">平均每度單價</span>
+              <div class="flex items-baseline gap-1 text-secondary-600">
+                <span class="text-sm font-bold">NT$</span>
+                <span id="result-avg-rate" class="text-4xl font-extrabold tracking-tight">0.00</span>
+                <span class="text-sm font-semibold ml-1 text-slate-500">元 / 度</span>
+              </div>
+              <span class="text-xs text-slate-400 mt-2 block">依總用電均攤計算</span>
+            </div>
+          </div>
+
+          <!-- Progress Visual Representation -->
+          <div class="mb-8">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-bold text-slate-600">用電級距分佈比例</span>
+              <span id="kwh-badge" class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">500 度</span>
+            </div>
+            <!-- Progress Bar container -->
+            <div id="progression-bar-container" class="h-5 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+              <!-- Dynamically Filled segments -->
+            </div>
+            <!-- Legend Container -->
+            <div id="progression-legend" class="flex flex-wrap gap-x-4 gap-y-2 mt-3 text-xs text-slate-500">
+              <!-- Dynamically filled legends -->
+            </div>
+          </div>
+
+          <!-- Detailed Tier Table -->
+          <div>
+            <h3 class="text-sm font-bold text-slate-600 mb-3 flex items-center gap-1.5">
+              <i data-lucide="list" class="w-4 h-4 text-slate-400"></i>
+              累進級距計算明細
+            </h3>
+            
+            <div class="overflow-x-auto rounded-2xl border border-slate-100">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs font-bold">
+                    <th class="py-3.5 px-4">用電級距 (度)</th>
+                    <th class="py-3.5 px-4 text-center">該級距度數</th>
+                    <th class="py-3.5 px-4 text-right">單價 (元)</th>
+                    <th class="py-3.5 px-4 text-right">小計 (元)</th>
+                  </tr>
+                </thead>
+                <tbody id="detail-table-body" class="divide-y divide-slate-50 text-sm">
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Official Rates & Energy Tips section -->
+    <section class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- Energy Tips -->
+      <div class="bg-white rounded-3xl p-6 custom-shadow border border-slate-100/80">
+        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <i data-lucide="leaf" class="text-emerald-500 w-5 h-5"></i>
+          智慧省電小撇步
+        </h3>
+        <ul class="space-y-3 text-sm text-slate-600">
+          <li class="flex items-start gap-2.5">
+            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 shrink-0"></span>
+            <span>冷氣設定於 <strong>26~28度</strong>，並搭配循環扇，每調高1度可節省約6%冷氣用電量。</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 shrink-0"></span>
+            <span>選購電器優先挑選具有 <strong>「1級能源效率標示」</strong> 的產品，長久省電效果最顯著。</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 shrink-0"></span>
+            <span>拔除長時間不使用之「待機家電」插頭（如微波爐、數位機上盒），或使用具獨立開關插座。</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Rate Toggle Card -->
+      <div class="bg-white rounded-3xl p-6 custom-shadow border border-slate-100/80">
+        <button onclick="toggleRateTable()" class="w-full flex items-center justify-between font-bold text-lg text-slate-800 focus:outline-none">
+          <span class="flex items-center gap-2">
+            <i data-lucide="table-properties" class="text-secondary-500 w-5 h-5"></i>
+            查看台電官方基準費率表
+          </span>
+          <i id="rate-chevron" data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-200"></i>
+        </button>
+
+        <!-- Collapsible Content -->
+        <div id="rate-table-content" class="hidden mt-4 pt-4 border-t border-slate-100">
+          <div class="grid grid-cols-2 gap-2 mb-4 bg-slate-50 p-1 rounded-lg">
+            <button onclick="changeRateTableType('residential')" id="btn-tbl-residential" class="py-1 px-3 rounded text-xs font-bold transition-all bg-white text-slate-800 shadow-sm">住宅用戶</button>
+            <button onclick="changeRateTableType('commercial')" id="btn-tbl-commercial" class="py-1 px-3 rounded text-xs font-bold transition-all text-slate-500">小商店</button>
+          </div>
+
+          <div class="overflow-x-auto text-xs">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-500">
+                  <th class="p-2">每月用電級距</th>
+                  <th class="p-2 text-right">夏月單價</th>
+                  <th class="p-2 text-right">非夏月單價</th>
+                </tr>
+              </thead>
+              <tbody id="rate-table-body" class="divide-y divide-slate-50 text-slate-600">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-2">※ 本表費率以目前台電公告之累進電價標準進行設定。若為雙月帳單，級距度數會直接乘以 2。</p>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- Notification Toast System (Avoids Alerts) -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white py-3.5 px-6 rounded-2xl shadow-xl transition-all duration-300 translate-y-20 opacity-0 flex items-center gap-2 text-sm font-semibold z-50">
+    <i data-lucide="info" class="w-4 h-4 text-brand-400"></i>
+    <span id="toast-message">提示訊息</span>
+  </div>
+
+  <script>
+    // --- STATE MANAGEMENT ---
+    let config = {
+      cycle: 'bimonthly', // 'bimonthly' (2x tiers) or 'monthly' (1x tiers)
+      type: 'residential', // 'residential' or 'commercial'
+      season: 'summer', // 'summer' or 'nonSummer'
+      kwh: 500
+    };
+
+    // --- OFFICIAL TAIWAN POWER COMPANY RATES (2024-2025/2026 Latest Standard) ---
+    const rawRates = {
+      residential: [
+        { limit: 120, summer: 1.68, nonSummer: 1.68, color: 'bg-emerald-400' },
+        { limit: 330, summer: 2.45, nonSummer: 2.16, color: 'bg-teal-400' },
+        { limit: 500, summer: 3.70, nonSummer: 3.03, color: 'bg-cyan-400' },
+        { limit: 700, summer: 5.04, nonSummer: 4.14, color: 'bg-sky-400' },
+        { limit: 1000, summer: 6.24, nonSummer: 5.07, color: 'bg-indigo-400' },
+        { limit: Infinity, summer: 8.46, nonSummer: 6.63, color: 'bg-rose-400' }
+      ],
+      commercial: [ // 小商店非時間電價
+        { limit: 330, summer: 2.53, nonSummer: 2.12, color: 'bg-emerald-400' },
+        { limit: 700, summer: 3.55, nonSummer: 2.91, color: 'bg-teal-400' },
+        { limit: 1500, summer: 4.43, nonSummer: 3.61, color: 'bg-cyan-400' },
+        { limit: Infinity, summer: 6.75, nonSummer: 5.48, color: 'bg-rose-400' }
+      ]
+    };
+
+    // Color list for progressive breakdown visuals
+    const colorClasses = {
+      'bg-emerald-400': 'bg-emerald-400',
+      'bg-teal-400': 'bg-teal-400',
+      'bg-cyan-400': 'bg-cyan-400',
+      'bg-sky-400': 'bg-sky-400',
+      'bg-indigo-400': 'bg-indigo-400',
+      'bg-rose-400': 'bg-rose-400'
+    };
+
+    // --- CONTROLLER FUNCTIONS ---
+
+    function setCycle(val) {
+      config.cycle = val;
+      updateUIButtons('cycle', val);
+      calculateBill();
+      showToast(`已切換至「${val === 'bimonthly' ? '雙月 (每期) 帳單' : '單月計費'}」計算模式`);
+    }
+
+    function setType(val) {
+      config.type = val;
+      updateUIButtons('type', val);
+      calculateBill();
+      showToast(`已切換至「${val === 'residential' ? '住宅用戶' : '營業用電'}」電價標準`);
+    }
+
+    function setSeason(val) {
+      config.season = val;
+      updateUIButtons('season', val);
+      calculateBill();
+      showToast(`已套用「${val === 'summer' ? '夏月 (6/1~9/30)' : '非夏月'}」費率標準`);
+    }
+
+    function adjustKwh(amount) {
+      const input = document.getElementById('kwh-input');
+      let val = parseInt(input.value) || 0;
+      val += amount;
+      input.value = val;
+      config.kwh = val;
+      calculateBill();
+    }
+
+    function clearKwh() {
+      const input = document.getElementById('kwh-input');
+      input.value = 0;
+      config.kwh = 0;
+      calculateBill();
+      showToast('用電度數已歸零');
+    }
+
+    // Dynamic button styles based on selected state
+    function updateUIButtons(group, activeValue) {
+      if (group === 'cycle') {
+        const btnBi = document.getElementById('btn-cycle-bimonthly');
+        const btnMon = document.getElementById('btn-cycle-monthly');
+        if (activeValue === 'bimonthly') {
+          btnBi.className = "py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm bg-white text-slate-800 border border-slate-200/50";
+          btnMon.className = "py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 text-slate-500 hover:text-slate-800";
+        } else {
+          btnMon.className = "py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm bg-white text-slate-800 border border-slate-200/50";
+          btnBi.className = "py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 text-slate-500 hover:text-slate-800";
+        }
+      }
+
+      if (group === 'type') {
+        const btnRes = document.getElementById('btn-type-residential');
+        const btnCom = document.getElementById('btn-type-commercial');
+        if (activeValue === 'residential') {
+          btnRes.className = "py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm bg-white text-slate-800 border border-slate-200/50";
+          btnCom.className = "py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 text-slate-500 hover:text-slate-800";
+        } else {
+          btnCom.className = "py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm bg-white text-slate-800 border border-slate-200/50";
+          btnRes.className = "py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 text-slate-500 hover:text-slate-800";
+        }
+      }
+
+      if (group === 'season') {
+        const btnSum = document.getElementById('btn-season-summer');
+        const btnNon = document.getElementById('btn-season-nonSummer');
+        if (activeValue === 'summer') {
+          btnSum.className = "py-3 px-4 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 text-amber-700 bg-amber-50 border border-amber-200/50 shadow-sm";
+          btnNon.className = "py-3 px-4 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+        } else {
+          btnNon.className = "py-3 px-4 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 text-sky-700 bg-sky-50 border border-sky-200/50 shadow-sm";
+          btnSum.className = "py-3 px-4 rounded-lg font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+        }
+      }
+    }
+
+    // --- MAIN BILL CALCULATION LOGIC ---
+    function calculateBill() {
+      const input = document.getElementById('kwh-input');
+      let totalKwh = parseFloat(input.value);
+      if (isNaN(totalKwh) || totalKwh < 0) {
+        totalKwh = 0;
+      }
+      config.kwh = totalKwh;
+
+      // Update Kwh badge text
+      document.getElementById('kwh-badge').innerText = `${totalKwh.toLocaleString()} 度`;
+      document.getElementById('result-cycle-desc').innerText = config.cycle === 'bimonthly' ? '每期 (雙月) 合併應繳金額' : '每月預估應繳金額';
+
+      // Multiplier based on Cycle
+      const M = config.cycle === 'bimonthly' ? 2 : 1;
+
+      // Select active rates table
+      const activeTiers = rawRates[config.type];
+      const seasonKey = config.season; // 'summer' or 'nonSummer'
+
+      let remaining = totalKwh;
+      let totalBill = 0;
+      let details = [];
+
+      for (let i = 0; i < activeTiers.length; i++) {
+        const tier = activeTiers[i];
+        const prevLimit = i === 0 ? 0 : activeTiers[i - 1].limit;
+        const currentLimit = tier.limit;
+
+        // Multiply tier limits by billing cycle multiplier
+        const adjPrevLimit = prevLimit === Infinity ? Infinity : prevLimit * M;
+        const adjCurrentLimit = currentLimit === Infinity ? Infinity : currentLimit * M;
+        const tierSize = adjCurrentLimit - adjPrevLimit;
+
+        // Rate
+        const rate = tier[seasonKey];
+
+        // Determine usage in this specific tier
+        let kwhInTier = 0;
+        if (remaining > 0) {
+          kwhInTier = Math.min(remaining, tierSize);
+          remaining -= kwhInTier;
+        }
+
+        const costInTier = kwhInTier * rate;
+        totalBill += costInTier;
+
+        // Generate Label
+        let label = "";
+        if (currentLimit === Infinity) {
+          label = `${(adjPrevLimit + 1).toLocaleString()} 度以上`;
+        } else {
+          label = `${(adjPrevLimit + 1).toLocaleString()} ~ ${adjCurrentLimit.toLocaleString()}`;
+        }
+
+        details.push({
+          label: label,
+          kwh: kwhInTier,
+          rate: rate,
+          cost: costInTier,
+          color: tier.color
+        });
+
+        if (remaining <= 0 && totalKwh > 0) {
+          // If we mapped all used kwh, we can still generate the zero rows but we will mainly focus on visual highlights
+        }
+      }
+
+      // Update Results UI
+      const roundedBill = Math.round(totalBill);
+      document.getElementById('result-total-bill').innerText = roundedBill.toLocaleString();
+
+      const avgRate = totalKwh > 0 ? (totalBill / totalKwh).toFixed(2) : '0.00';
+      document.getElementById('result-avg-rate').innerText = avgRate;
+
+      renderBreakdownTable(details);
+      renderProgressionBar(details, totalKwh);
+    }
+
+    // --- UI RENDERING FUNCTIONS ---
+
+    // Render detailed table rows
+    function renderBreakdownTable(details) {
+      const tbody = document.getElementById('detail-table-body');
+      tbody.innerHTML = '';
+
+      details.forEach(item => {
+        // We highlight rows that have actual consumption
+        const hasConsumption = item.kwh > 0;
+        const rowClass = hasConsumption ? 'font-medium bg-slate-50/40 text-slate-800' : 'text-slate-400 opacity-60';
+        const badgeColor = item.color;
+
+        const tr = document.createElement('tr');
+        tr.className = `${rowClass} transition-colors duration-150`;
+        tr.innerHTML = `
+          <td class="py-3 px-4 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full ${badgeColor} inline-block shrink-0"></span>
+            <span>${item.label}</span>
+          </td>
+          <td class="py-3 px-4 text-center font-mono ${hasConsumption ? 'text-slate-800 font-bold' : ''}">
+            ${item.kwh.toLocaleString()} <span class="text-xs text-slate-400">度</span>
+          </td>
+          <td class="py-3 px-4 text-right font-mono">
+            NT$ ${item.rate.toFixed(2)}
+          </td>
+          <td class="py-3 px-4 text-right font-mono text-slate-900 font-bold">
+            ${hasConsumption ? `NT$ ${Math.round(item.cost).toLocaleString()}` : '-'}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Render beautiful dynamic visual progression segments
+    function renderProgressionBar(details, totalKwh) {
+      const container = document.getElementById('progression-bar-container');
+      const legend = document.getElementById('progression-legend');
+      container.innerHTML = '';
+      legend.innerHTML = '';
+
+      if (totalKwh === 0) {
+        container.innerHTML = `<div class="w-full text-xs text-slate-400 flex items-center justify-center font-medium">請輸入大於 0 的用電度數</div>`;
+        return;
+      }
+
+      details.forEach((item, index) => {
+        if (item.kwh > 0) {
+          const percentage = (item.kwh / totalKwh) * 100;
+          
+          // Create Bar segment
+          const segment = document.createElement('div');
+          segment.className = `${item.color} h-full transition-all duration-500 relative group`;
+          segment.style.width = `${percentage}%`;
+          
+          // Hover Tooltip inside segment
+          segment.innerHTML = `
+            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-slate-900 text-white text-[10px] py-1 px-2 rounded whitespace-nowrap z-30 shadow-md">
+              ${item.label}: ${item.kwh.toLocaleString()}度 (${percentage.toFixed(1)}%)
+            </div>
+          `;
+          container.appendChild(segment);
+
+          // Create Legend
+          const legendItem = document.createElement('div');
+          legendItem.className = "flex items-center gap-1.5";
+          legendItem.innerHTML = `
+            <span class="w-3 h-3 rounded-md ${item.color}"></span>
+            <span>第 ${index + 1} 級段 (${percentage.toFixed(0)}%)</span>
+          `;
+          legend.appendChild(legendItem);
+        }
+      });
+    }
+
+    // Rate Table Modal Control
+    let isRateTableOpen = false;
+    let rateTableActiveType = 'residential';
+
+    function toggleRateTable() {
+      const content = document.getElementById('rate-table-content');
+      const chevron = document.getElementById('rate-chevron');
+      isRateTableOpen = !isRateTableOpen;
+      
+      if (isRateTableOpen) {
+        content.classList.remove('hidden');
+        chevron.classList.add('rotate-180');
+        renderReferenceRateTable();
+      } else {
+        content.classList.add('hidden');
+        chevron.classList.remove('rotate-180');
+      }
+    }
+
+    function changeRateTableType(type) {
+      rateTableActiveType = type;
+      const btnRes = document.getElementById('btn-tbl-residential');
+      const btnCom = document.getElementById('btn-tbl-commercial');
+      
+      if (type === 'residential') {
+        btnRes.className = "py-1 px-3 rounded text-xs font-bold transition-all bg-white text-slate-800 shadow-sm";
+        btnCom.className = "py-1 px-3 rounded text-xs font-bold transition-all text-slate-500";
+      } else {
+        btnCom.className = "py-1 px-3 rounded text-xs font-bold transition-all bg-white text-slate-800 shadow-sm";
+        btnRes.className = "py-1 px-3 rounded text-xs font-bold transition-all text-slate-500";
+      }
+      renderReferenceRateTable();
+    }
+
+    function renderReferenceRateTable() {
+      const tbody = document.getElementById('rate-table-body');
+      tbody.innerHTML = '';
+      
+      const tiers = rawRates[rateTableActiveType];
+      
+      tiers.forEach((item, index) => {
+        const prevLimit = index === 0 ? 0 : tiers[index - 1].limit;
+        const currentLimit = item.limit;
+        
+        let label = "";
+        if (currentLimit === Infinity) {
+          label = `${(prevLimit + 1).toLocaleString()} 度以上`;
+        } else {
+          label = `${(prevLimit + 1).toLocaleString()} ~ ${currentLimit.toLocaleString()} 度`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2 font-medium">${label}</td>
+          <td class="p-2 text-right text-amber-600 font-mono font-bold">NT$ ${item.summer.toFixed(2)}</td>
+          <td class="p-2 text-right text-sky-600 font-mono font-bold">NT$ ${item.nonSummer.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- SYSTEM TOAST NOTIFICATIONS ---
+    let toastTimeout = null;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-message');
+      text.innerText = message;
+      
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      
+      if (toastTimeout) clearTimeout(toastTimeout);
+      
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // --- INITIALIZE APPLICATION ---
+    window.onload = function() {
+      // Initialize Lucide icons
+      lucide.createIcons();
+      // Run initial calculation on default value (500)
+      calculateBill();
+    };
+  </script>
+</body>
+</html>
